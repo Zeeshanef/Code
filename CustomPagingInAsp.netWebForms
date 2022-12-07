@@ -1,0 +1,58 @@
+asp:GridView ID="gvLeveSetup" runat="server" AllowPaging="True" AllowSorting="True" SkinID="gridviewNewSkin"
+    AutoGenerateColumns="False" DataKeyNames="Id"
+    DataSourceID="odsGrid" OnSelectedIndexChanged="gvLeveSetup_SelectedIndexChanged"
+    OnSorting="gvLeveSetup_Sorting" OnDataBound="gvLeveSetup_DataBound"
+    OnRowDataBound="gvLeveSetup_RowDataBound"
+    meta:resourcekey="gvLeveSetupResource1">
+
+    <Columns>
+    </Columns>
+  </asp:GridView>
+
+
+   protected void btnGetRecords_Click(object sender, EventArgs e)
+    {
+     BindEmpFilterGrid(hfEmployeeLkUpID.Value, 0, Convert.ToInt32(ddlPageSizegvLeavesRenewal.SelectedValue));
+    }
+
+   protected void gvLeavesRenewal_PageIndexChanging(object sender, GridViewPageEventArgs e)
+    {
+        BindEmpFilterGridM(hfEmployeeLkUpID.Value, e.NewPageIndex, Convert.ToInt32(ddlPageSizegvLeavesRenewal.SelectedValue));
+    }
+
+  //BindGrid on CS
+  private void BindEmpFilterGridM(string EmpID, int pageIndex, int pageSize)
+    {
+        //if empID is empty its mean emp was not selected from lookup.
+
+        int TotalRecords = 0;
+        LeaveProcessScheduleComponent lps = new LeaveProcessScheduleComponent();
+        DataTable dt = lps.EmloyeesLeaveProcessAndPreview(LvProcFilters, EmpID, pageIndex, pageSize, out TotalRecords);
+        ViewState["TotalRecCountgvLeavesRenewal"] = TotalRecords;
+        gvLeavesRenewal.PageSize = pageSize;
+        gvLeavesRenewal.DataSource = dt;
+        gvLeavesRenewal.VirtualItemCount = TotalRecords;
+        gvLeavesRenewal.PageIndex = pageIndex;
+
+        gvLeavesRenewal.DataBind();
+        ShowPageStringgvLeavesRenewal();
+        //updEmpGridMET.Update();
+    }
+
+
+    //SQL
+    -- Set Row number sequence 1 to 2... for paging purpose
+    update T
+    set ID = rn
+    from (
+		 select ID,
+			   row_number() over(order by (select 1)) as rn
+		 from #tmpTblLeaveProcessFilter
+     ) T
+
+    -- get total recrd cunt
+    SELECT @Param_RecordCount = COUNT(*) FROM #tmpTblLeaveProcessFilter
+
+    SELECT * from #tmpTblLeaveProcessFilter
+	 WHERE ID BETWEEN(@Param_PageIndex) * @Param_PageSize + 1 AND(((@Param_PageIndex) * @Param_PageSize + 1) + @Param_PageSize) - 1
+   
